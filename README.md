@@ -6,6 +6,8 @@ Similar to a line chart, except that the area below the lines is filled with col
 
 ## Installation & Use
 
+[Download latest version](https://github.com/TIBCOSoftware/spotfire-mod-area/releases)
+
 The [Wiki](https://github.com/TIBCOSoftware/spotfire-mod-area/wiki) contains step-by-step instruction on how to install and use this Mod in TIBCO Spotfire®.
 
 ## Building the Project
