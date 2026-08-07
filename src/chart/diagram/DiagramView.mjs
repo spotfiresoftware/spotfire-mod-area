@@ -975,7 +975,6 @@ export default class DiagramView extends EventHandler {
 
         // Get the y_domain
         const y_domain = domains.y_domain;
-        const yAxisIsDate = y_domain.every(yd => yd instanceof Date);
 
         // Determine left margin from y-axis scale
         let leftMargin = DiagramMargins.LEFT_MARGIN_NO_LABELS;
@@ -987,17 +986,9 @@ export default class DiagramView extends EventHandler {
                 .attr('height', `${height}px`);
             
             // Calculate a temp yScale
-            let yScale;
-            if(yAxisIsDate == true) {
-                yScale = d3.scaleTime()
-                    .domain([y_domain[0], y_domain[1]])
-                    .range([0, height]);
-            }
-            else {
-                yScale = d3.scaleLinear()
-                    .domain([y_domain[0], y_domain[1]])
-                    .range([0, height]);
-            }
+            const yScale = d3.scaleLinear()
+                .domain([y_domain[0], y_domain[1]])
+                .range([0, height]);
     
             // Create a y axis generator with custom date formatting if needed
             const yAxis = d3.axisLeft(yScale);
