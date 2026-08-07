@@ -500,8 +500,8 @@ export default class DiagramView extends EventHandler {
         // Debugging log
         Log.trace(DiagramView.LOG_MODULE, 'Update', `Segments added: ${segmentSelect.enter().size()}, removed: ${segmentSelect.exit().size()}, updated: ${segmentSelect.size()}`);
 
-        // Create new objects, result will be new and updated objects
-        const segmentGSelect = segmentSelect.enter().append('g').attr('class', 'segment').merge(segmentSelect);
+        // Add new objects and remove old objects
+        const segmentGSelect = segmentSelect.join(enter => enter.append('g').attr('class', 'segment'));
 
         // Update new and existing objects
         segmentGSelect.each(function (segment, i) {
