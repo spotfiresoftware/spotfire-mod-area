@@ -13,6 +13,7 @@ import TextMeasurerService from "@spotfire-mod-common/common/util/graphics/TextM
 import AreaChartValidator from "../AreaChartValidator.mjs";
 import DiagramModel from "../DiagramModel.mjs";
 import { DiagramMargins } from "../DiagramView.mjs";
+import { LineWithEmptyValues } from "../../AreaChartConstants.mjs";
 
 export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy {
     static LOG_MODULE = 'AreaChart:DiagramRenderStrategy';
@@ -98,13 +99,23 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
     // Recalculate the segments for the diagram
     #calculateSegmentGroups(diagram) {
         const dataNode = diagram.getDataNode();
+        const vizModules = diagram.getVisualizationModules();
+        const vizConfiguration = vizModules.getVizConfiguration();
+        const vizConfig = vizConfiguration.getConfiguration();
+
+        // Determine how to handle line with empty values based on configuration
+        const lineWithEmptyValues = vizConfig.appearance.lineWithEmptyValues;
+        const fillGaps = lineWithEmptyValues === LineWithEmptyValues.CONTINUE;
+
+        // Calculate the domains
         const domains = this.#calculateDomains(diagram);
         const x_domain = domains.x_domain;
 
+        // Create an array of segment groups
         const segmentGroups = [];
 
         // Data node hierarchy: moduleId > colorBy
-        for (const colorByKey of dataNode.getKeys()) {
+        for(const colorByKey of dataNode.getKeys()) {
             const colorByDataNode = dataNode.getDataNodeByKey(colorByKey);
             const objects = colorByDataNode.getObjects();
 
@@ -116,37 +127,37 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
             let markedCount = 0;
             let prevObj = null;
 
-            for (const xValue of x_domain) {
+            for(const xValue of x_domain) {
                 const obj = objectsByX.get(xValue);
 
-                if (obj == null) {
-                    // Gap in the x domain — break the current segment and subsegment
+                if(obj == null) {
+                    if(fillGaps && currentSegment != null) continue;
                     currentSegment = null;
                     currentSubsegment = null;
                     prevObj = null;
                     continue;
                 }
 
-                if (currentSegment == null) {
+                if(currentSegment == null) {
                     currentSegment = { colorParts: obj.colorParts, points: [], subsegments: [] };
                     segments.push(currentSegment);
                 }
 
                 currentSegment.points.push(obj);
 
-                if (obj.marked) markedCount++;
+                if(obj.marked) markedCount++;
 
                 // Start a new subsegment when marked changes or at segment start
-                if (currentSubsegment == null || currentSubsegment.marked !== obj.marked) {
+                if(currentSubsegment == null || currentSubsegment.marked !== obj.marked) {
                     const wasMarked = currentSubsegment?.marked ?? false;
                     // unmarked → marked: append first marked to closing unmarked subsegment
-                    if (currentSubsegment != null && !wasMarked) {
+                    if(currentSubsegment != null && !wasMarked) {
                         currentSubsegment.points.push(obj);
                     }
                     currentSubsegment = { marked: obj.marked, color: obj.color, points: [] };
                     currentSegment.subsegments.push(currentSubsegment);
                     // marked → unmarked: prepend last marked to opening unmarked subsegment
-                    if (wasMarked) {
+                    if(wasMarked) {
                         currentSubsegment.points.push(prevObj);
                     }
                 }
@@ -185,7 +196,7 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
         const canvasElem = diagram.getCanvasElem();
         const width = canvasElem.clientWidth - DiagramMargins.LEFT_MARGIN_LABELS - DiagramMargins.RIGHT_MARGIN;
         const height = canvasElem.clientHeight - DiagramMargins.TOP_MARGIN - DiagramMargins.BOTTOM_MARGIN_LABELS;
-        if (height <= 0 || width <= 0) return StrategyResult.createSuccessResult();
+        if(height <= 0 || width <= 0) return StrategyResult.createSuccessResult();
 
         // Update TextMeasurer font settings based on current user settings
         TextMeasurerService.updateFont(
@@ -212,7 +223,7 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
         const result = await view.redraw();
 
         // Display any errors or warnings
-        if (result.valid == false) {
+        if(result.valid == false) {
             const errors = [result.message];
             return StrategyResult.createErrorResult(errors);
         }

@@ -41,6 +41,19 @@ export const vizConfigurationTemplate = {
             "maxVal": 100,
             "valueLabelSuffix": '%',
         },
+        "lineWithEmptyValues": {
+            "label": "cfgAppearanceLineWithEmptyValues",
+            "datatype": "string",
+            "radio": true,
+            "enumeration": [
+                {"label": "cfgAppearanceLineWithEmptyValuesContinue", "value": "continue"},
+                {"label": "cfgAppearanceLineWithEmptyValuesBreak", "value": "break"},
+            ]
+        },
+        "smoothCurves": {
+            "label": "cfgAppearanceSmoothCurves",
+            "datatype": "boolean"
+        },
     },
     "data": {
         "_label": "cfgGroupData",

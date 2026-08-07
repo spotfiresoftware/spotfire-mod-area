@@ -3,6 +3,10 @@
     "cfgAppearanceLineDashArray":               "Line style",
     "cfgAppearanceLineWidth":	                "Line width:",
     "cfgAppearanceFillTransparency":            "Area transparency: ",
+    "cfgAppearanceLineWithEmptyValues":         "Area with empty values",
+    "cfgAppearanceLineWithEmptyValuesContinue": "Continue area",
+    "cfgAppearanceLineWithEmptyValuesBreak":    "Break area",
+    "cfgAppearanceSmoothCurves":                "Smooth curves",
 
     "cfgGroupXAxis":                            "X-axis",
     "cfgGroupYAxis":                            "Y-axis",

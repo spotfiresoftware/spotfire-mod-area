@@ -4,3 +4,7 @@
  * in the license file that is distributed with this file.
  */
 
+export class LineWithEmptyValues {
+    static CONTINUE = 'continue'
+    static BREAK = 'break'
+}

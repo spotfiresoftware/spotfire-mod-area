@@ -10,6 +10,8 @@ export const vizConfigurationDefault = {
         "strokeDashArray": " ",
         "strokeWidth": 2,
         "fillTransparency": 50,
+        "lineWithEmptyValues": 'continue',
+        "smoothCurves": false,
     },
     "data": {
         "rowLimit": 1000000,
