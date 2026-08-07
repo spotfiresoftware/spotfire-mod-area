@@ -822,7 +822,10 @@ export default class DiagramView extends EventHandler {
     // Creates a closed path string from an array of points, using the specified curve
     #createClosedPathString(points, curve = d3.curveLinear) {
         const { xScale, yScale } = this.#scales;
-        const yBaseline = yScale.range()[0];
+        const [yRangeBottom, yRangeTop] = yScale.range();
+
+        // Baseline at y=0, clamped to the visible plot area
+        const yBaseline = Math.min(yRangeBottom, Math.max(yRangeTop, yScale(0)));
         return d3.area()
             .x(p => xScale(p.x))
             .y0(yBaseline)
