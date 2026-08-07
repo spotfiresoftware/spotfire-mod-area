@@ -1,0 +1,75 @@
+/*
+ * Copyright © 2026. Cloud Software Group, Inc.
+ * This file is subject to the license terms contained
+ * in the license file that is distributed with this file.
+ */
+
+$line_outline_color: #65686F;
+
+$data_point_stroke: #61646B;
+$data_point_stroke_opacity: 0.5;
+
+div.main div.content div.visualization {
+    div.canvas div.area-chart-diagram div.plot-area {
+        g.base.area, g.marked.area {
+            path.data {
+                stroke: none;
+            }
+        }
+
+        g.base.line, g.marked.line {
+            path.events {
+                stroke: transparent;
+                fill: none;
+            }
+
+            path.data {
+                fill: none;
+            }
+
+            circle.event-point {
+                stroke: transparent;
+                fill: transparent;
+            }
+
+            circle.data-point {
+                stroke-width: 1;
+                stroke: $data_point_stroke;
+                stroke-opacity: $data_point_stroke_opacity;
+            }
+        }
+
+        g.hovered {
+            g.hovered-group {
+                display: none;
+
+                &.visible {
+                    display: block;
+                }
+            }
+
+            path.background {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                stroke: $line_outline_color;
+                fill: none;
+            }
+
+            path.padding {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                fill: none;
+            }
+
+            path.data {
+                fill: none;
+            }
+
+            circle.data-point {
+                stroke-width: 1;
+                stroke: $data_point_stroke;
+                stroke-opacity: $data_point_stroke_opacity;
+            }
+        }
+    }
+}

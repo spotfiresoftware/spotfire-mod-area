@@ -1,0 +1,47 @@
+/*
+ * Copyright © 2024-2026. Cloud Software Group, Inc.
+ * This file is subject to the license terms contained
+ * in the license file that is distributed with this file.
+ */
+ 
+$configuration_line_pattern_color: #9B9FAB;
+
+div.main div.configuration div.form {
+    // Select line pattern
+    div.form-element.select.configuration-stroke-line-pattern {
+        width: 50%;
+        min-width: 84px;
+
+        label {
+            div.select-container {
+                div.select {
+                    div.selected-option.line-pattern {
+                        svg {
+                            margin-left: 3px;
+                            height: 100%;
+                            width: calc(100% - 12px);
+                            color: $configuration_line_pattern_color;
+                        }
+                    }
+
+                    div.option-container {
+                        div.option.line-pattern {
+                            svg {
+                                margin-left: 3px;
+                                height: 100%;
+                                width: calc(100% - 12px);
+                                color: $configuration_line_pattern_color;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Input for scale min max
+    div.form-element.input.configuration-scale-min-max {
+        width: 50%;
+        min-width: 84px;
+    }    
+}

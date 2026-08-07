@@ -1,0 +1,24 @@
+{
+    "cfgGroupAppearance":                       "Appearance",
+    "cfgAppearanceLineDashArray":               "Line style",
+    "cfgAppearanceLineWidth":	                "Line width:",
+    "cfgAppearanceFillTransparency":            "Area transparency: ",
+
+    "cfgGroupXAxis":                            "X-axis",
+    "cfgGroupYAxis":                            "Y-axis",
+
+    "cfgAxisShowScale":                         "Show scale labels",
+    "cfgAxisScaleInvert":                       "Reverse scale",
+    "cfgAxisScaleMin":                          "Scale range min",
+    "cfgAxisScaleMinPlaceholder":               "Automatic",
+    "cfgAxisScaleMinValidation":                "The min value must be smaller than the max value.",
+    "cfgAxisScaleMax":                          "Scale range max",
+    "cfgAxisScaleMaxPlaceholder":               "Automatic",
+    "cfgAxisScaleMaxValidation":                "The max value must be greater than the min value.",
+
+    "cfgGroupGridlines":                        "Gridlines",
+    "cfgGridlinesX":                            "Show gridlines on X-axis",
+    "cfgGridlinesY":                            "Show gridlines on Y-axis",
+
+    "":""
+}

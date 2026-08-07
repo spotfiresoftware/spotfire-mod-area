@@ -1,0 +1,86 @@
+/*
+ * Copyright © 2026. Cloud Software Group, Inc.
+ * This file is subject to the license terms contained
+ * in the license file that is distributed with this file.
+ */
+
+$grid_stroke: #D1D4DE;
+$grid_stroke_dark: #666666;
+
+$outline_stroke: #61646B;
+$outline_stroke_opacity: 0.5;
+
+$line_outline_color: #65686F;
+
+div.main div.content div.visualization {
+    div.canvas div.area-chart-diagram {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+
+        div.plot-area {
+            flex: 1 1 auto;
+            display: grid;
+            grid-auto-columns: 1fr;
+            grid-auto-rows: 1fr;
+            position: relative;
+            overflow: hidden;
+
+            svg {
+                display: block;
+                overflow: visible;
+
+                g.grid {
+                    line.grid {
+                        stroke: $grid_stroke;
+                        stroke-dasharray: 1;
+                        stroke-width: 1;
+                    }
+                }
+
+                g.scales {
+                    g.scale {
+                        g.tick {
+                            display: none;
+                        }
+
+                        &.visible {
+                            g.tick {
+                                display: block;
+                            }
+                        }
+                    }
+                }
+
+                g.tick-labels {
+                    > text.tick {
+                        fill: currentColor;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Disable any pointer events during rect marking
+    &.rect-marking {
+        *.interactive {
+            pointer-events: none;   
+        }
+    }
+}
+
+div.main.dark div.content div.visualization div.canvas div.area-chart-diagram {
+    div.plot-area {
+        svg {
+            g.grid {
+                line.grid {
+                    stroke: $grid_stroke_dark;
+                }
+            }
+        }
+    }
+}
