@@ -41,13 +41,23 @@ export const vizConfigurationTemplate = {
             "maxVal": 100,
             "valueLabelSuffix": '%',
         },
-        "lineWithEmptyValues": {
-            "label": "cfgAppearanceLineWithEmptyValues",
+        "areaWithEmptyValues": {
+            "label": "cfgAppearanceAreaWithEmptyValues",
             "datatype": "string",
             "radio": true,
             "enumeration": [
-                {"label": "cfgAppearanceLineWithEmptyValuesContinue", "value": "continue"},
-                {"label": "cfgAppearanceLineWithEmptyValuesBreak", "value": "break"},
+                {"label": "cfgAppearanceAreaWithEmptyValuesContinue", "value": "continue"},
+                {"label": "cfgAppearanceAreaWithEmptyValuesBreak", "value": "break"},
+            ]
+        },
+        "areaLayout": {
+            "label": "cfgAppearanceAreaLayout",
+            "datatype": "string",
+            "radio": true,
+            "enumeration": [
+                {"label": "cfgAppearanceAreaLayoutOverlapping", "value": "overlapping"},
+                {"label": "cfgAppearanceAreaLayoutStacked", "value": "stacked"},
+                {"label": "cfgAppearanceAreaLayoutStacked100", "value": "stacked-100"},
             ]
         },
         "smoothCurves": {

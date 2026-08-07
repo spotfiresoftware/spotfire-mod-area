@@ -13,7 +13,7 @@ import TextMeasurerService from "@spotfire-mod-common/common/util/graphics/TextM
 import AreaChartValidator from "../AreaChartValidator.mjs";
 import DiagramModel from "../DiagramModel.mjs";
 import { DiagramMargins } from "../DiagramView.mjs";
-import { LineWithEmptyValues } from "../../AreaChartConstants.mjs";
+import { AreaWithEmptyValues } from "../../AreaChartConstants.mjs";
 
 export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy {
     static LOG_MODULE = 'AreaChart:DiagramRenderStrategy';
@@ -104,8 +104,8 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
         const vizConfig = vizConfiguration.getConfiguration();
 
         // Determine how to handle line with empty values based on configuration
-        const lineWithEmptyValues = vizConfig.appearance.lineWithEmptyValues;
-        const fillGaps = lineWithEmptyValues === LineWithEmptyValues.CONTINUE;
+        const areaWithEmptyValues = vizConfig.appearance.areaWithEmptyValues;
+        const fillGaps = areaWithEmptyValues === AreaWithEmptyValues.CONTINUE;
 
         // Calculate the domains
         const domains = this.#calculateDomains(diagram);

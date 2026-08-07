@@ -10,7 +10,8 @@ export const vizConfigurationDefault = {
         "strokeDashArray": " ",
         "strokeWidth": 2,
         "fillTransparency": 50,
-        "lineWithEmptyValues": 'continue',
+        "areaWithEmptyValues": "continue",
+        "areaLayout": "overlapping",
         "smoothCurves": false,
     },
     "data": {

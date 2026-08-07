@@ -4,7 +4,13 @@
  * in the license file that is distributed with this file.
  */
 
-export class LineWithEmptyValues {
+export class AreaLayout {
+    static OVERLAPPING = 'overlapping'
+    static STACKED = 'stacked'
+    static STACKED_100 = 'stacked-100'
+}
+
+export class AreaWithEmptyValues {
     static CONTINUE = 'continue'
     static BREAK = 'break'
 }
