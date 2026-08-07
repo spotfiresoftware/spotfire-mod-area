@@ -501,6 +501,9 @@ export default class DiagramView extends EventHandler {
         });
     }
 
+    /* ---------------------------------------------------------------------------------------------------- */
+    /* REDRAW - SEGMENTS */
+
     // Update a single segment
     #updateSegment(segmentSelect, segment, segmentGroup, hasEvents, isMarked) {
         if(segmentSelect.node().children.length === 0) {
@@ -545,6 +548,9 @@ export default class DiagramView extends EventHandler {
         const dataAreasSelect = segmentSelect.select('g.data-areas');
         this.#updateSegmentDataLines(dataAreasSelect, subsegments, (points) => this.#createClosedPathString(points));
     }
+
+    /* ---------------------------------------------------------------------------------------------------- */
+    /* REDRAW - SEGMENT COMPONENTS */
 
     // Update segment event line
     #updateSegmentEventLine(parentElem, segment) {
