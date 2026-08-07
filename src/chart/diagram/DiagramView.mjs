@@ -17,6 +17,8 @@ import SVGUtility from '@spotfire-mod-common/common/util/graphics/SVGUtility.mjs
 import TextMeasurerService from "@spotfire-mod-common/common/util/graphics/TextMeasurerService.mjs";
 import TooltipService from "@spotfire-mod-common/common/view/services/TooltipService.mjs";
 
+import { AreaLayout } from '../AreaChartConstants.mjs';
+
 export default class DiagramView extends EventHandler {
     static LOG_MODULE = 'DiagramView';
 
@@ -406,13 +408,14 @@ export default class DiagramView extends EventHandler {
 
         // Limit ticks to a maximum count
         const maxTicks = vizConfig.yAxis.maxTickCount ?? height / 70;
+        const tickFormat = vizConfig.appearance.areaLayout === AreaLayout.STACKED_100 ? d3.format('.0%') : null;
 
         // Always show scales initially otherwise labels don't appear
         svgScaleYGSelect.classed('visible', true);
 
         // Append y-axis scale
         svgScaleYGSelect
-            .call(d3.axisLeft(yScale).tickSizeOuter(0).ticks(maxTicks))
+            .call(d3.axisLeft(yScale).tickSizeOuter(0).ticks(maxTicks).tickFormat(tickFormat))
             .call(g => g.selectAll('.tick line')
                 .attr('stroke', context.styling.scales.tick.stroke)
             )
@@ -697,7 +700,7 @@ export default class DiagramView extends EventHandler {
         // Update new and existing event points
         pointsSelect
             .attr('cx', (point) => xScale(point.x))
-            .attr('cy', (point) => yScale(point.y))
+            .attr('cy', (point) => yScale(point.y1))
             .attr('r', dataPointsEventRadius)
             .on('mouseover', (e, d) => mouseover(e, d, segment))
             .on('mouseout', mouseout)
@@ -786,7 +789,7 @@ export default class DiagramView extends EventHandler {
                 .join(enter => enter.append('circle').attr('class', 'data-point interactive'));
             pointsSelect
                 .attr('cx', (point) => xScale(point.x))
-                .attr('cy', (point) => yScale(point.y))
+                .attr('cy', (point) => yScale(point.y1))
                 .attr('r', dataPointsRadius)
                 .attr('fill', segment.color);
         });
@@ -815,7 +818,7 @@ export default class DiagramView extends EventHandler {
         const { xScale, yScale } = this.#scales;
         return d3.line()
             .x(p => xScale(p.x))
-            .y(p => yScale(p.y))
+            .y(p => yScale(p.y1))
             .curve(curve)(points);
     }
 
@@ -828,8 +831,8 @@ export default class DiagramView extends EventHandler {
         const yBaseline = Math.min(yRangeBottom, Math.max(yRangeTop, yScale(0)));
         return d3.area()
             .x(p => xScale(p.x))
-            .y0(yBaseline)
-            .y1(p => yScale(p.y))
+            .y0(p => yScale(p.y0))
+            .y1(p => yScale(p.y1))
             .curve(curve)(points);
     }
 
@@ -967,8 +970,9 @@ export default class DiagramView extends EventHandler {
         for(const segmentGroup of segmentGroups) {
             for(const segment of segmentGroup.segments) {
                 segment.points.forEach(point => {
+                    if(point.row == null) return;
                     const svgX = xScale(point.x);
-                    const svgY = yScale(point.y);
+                    const svgY = yScale(point.y1);
                     if(testPoint(svgX, svgY))
                         selectedArr.push(point);
                 });
@@ -983,12 +987,13 @@ export default class DiagramView extends EventHandler {
     // Convert a single point or a point array into a marking module rows object
     #convertPointsToMarkingModuleRows(points) {
         const markingModuleRows = new MarkingModuleRows();
-        
+
         const testPoints = Array.isArray(points) ? points : [points];
         
         // Extract and group by moduleId
         const moduleRowMap = {};
         for(const point of testPoints) {
+            if(point.row == null) continue;
             const row = point.row;
             moduleRowMap[point.moduleId] = moduleRowMap[point.moduleId] || [];
             moduleRowMap[point.moduleId].push(row);

@@ -13,7 +13,7 @@ import TextMeasurerService from "@spotfire-mod-common/common/util/graphics/TextM
 import AreaChartValidator from "../AreaChartValidator.mjs";
 import DiagramModel from "../DiagramModel.mjs";
 import { DiagramMargins } from "../DiagramView.mjs";
-import { AreaWithEmptyValues } from "../../AreaChartConstants.mjs";
+import { AreaLayout, AreaWithEmptyValues } from "../../AreaChartConstants.mjs";
 
 export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy {
     static LOG_MODULE = 'AreaChart:DiagramRenderStrategy';
@@ -106,6 +106,7 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
         // Determine how to handle line with empty values based on configuration
         const areaWithEmptyValues = vizConfig.appearance.areaWithEmptyValues;
         const fillGaps = areaWithEmptyValues === AreaWithEmptyValues.CONTINUE;
+        const areaLayout = vizConfig.appearance.areaLayout;
 
         // Calculate the domains
         const domains = this.#calculateDomains(diagram);
@@ -131,7 +132,29 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
                 const obj = objectsByX.get(xValue);
 
                 if(obj == null) {
-                    if(fillGaps && currentSegment != null) continue;
+                    if(fillGaps && currentSegment != null) {
+                        // In stacked modes, a gap must contribute y=0 so the line tracks the stacked base
+                        if(areaLayout !== AreaLayout.OVERLAPPING && prevObj != null) {
+                            const gapObj = { ...prevObj, x: xValue, y: 0, y0: 0, y1: 0, row: null };
+                            currentSegment.points.push(gapObj);
+                            currentSubsegment.points.push(gapObj);
+                            prevObj = gapObj;
+                        }
+                        continue;
+                    }
+                    // Leading zeros: series starts after the domain begins, extend backwards with y=0
+                    if(fillGaps && areaLayout !== AreaLayout.OVERLAPPING && objects.length > 0) {
+                        const templateObj = objects[0];
+                        const gapObj = { ...templateObj, x: xValue, y: 0, y0: 0, y1: 0, row: null };
+                        currentSegment = { colorParts: templateObj.colorParts, points: [], subsegments: [] };
+                        segments.push(currentSegment);
+                        currentSubsegment = { marked: false, color: templateObj.color, points: [] };
+                        currentSegment.subsegments.push(currentSubsegment);
+                        currentSegment.points.push(gapObj);
+                        currentSubsegment.points.push(gapObj);
+                        prevObj = gapObj;
+                        continue;
+                    }
                     currentSegment = null;
                     currentSubsegment = null;
                     prevObj = null;
@@ -171,6 +194,46 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
                 markedCount,
                 segments,
             });
+        }
+
+        // Highest alpha key at index 0 → drawn first (bottom) and stacked first
+        segmentGroups.sort((a, b) => b.id.localeCompare(a.id));
+
+        // Stacking pass: accumulate y0/y1 per x value across color series
+        if(areaLayout !== AreaLayout.OVERLAPPING) {
+            const groupPointMaps = segmentGroups.map(sg => {
+                const map = new Map();
+                for(const seg of sg.segments) {
+                    for(const pt of seg.points) {
+                        map.set(pt.x, pt);
+                    }
+                }
+                return map;
+            });
+
+            for(const xValue of x_domain) {
+                let total = 1;
+                if(areaLayout === AreaLayout.STACKED_100) {
+                    total = groupPointMaps.reduce((sum, map) => {
+                        const pt = map.get(xValue);
+                        return sum + (pt != null && pt.y != null ? Math.abs(pt.y) : 0);
+                    }, 0);
+                    if(total === 0) continue;
+                }
+
+                let base = 0;
+                for(const map of groupPointMaps) {
+                    const pt = map.get(xValue);
+                    if(pt == null || pt.y == null) continue;
+                    pt.y0 = base;
+                    pt.y1 = base + pt.y;
+                    base = pt.y1;
+                    if(areaLayout === AreaLayout.STACKED_100) {
+                        pt.y0 /= total;
+                        pt.y1 /= total;
+                    }
+                }
+            }
         }
 
         return segmentGroups;
@@ -250,12 +313,33 @@ export default class DiagramRenderStrategy extends AbstractDiagramRenderStrategy
         // x-axis is categorical so no scale range, left here in case continuous in future
         //const minX = vizConfig.xAxis.scaleMin ?? x_extents[0];
         //const maxX = vizConfig.xAxis.scaleMax ?? x_extents[1];
-        const minY = vizConfig.yAxis.scaleMin ?? y_extents[0];
-        const maxY = vizConfig.yAxis.scaleMax ?? y_extents[1];
 
         // Initialize the domains to be the extents
         const x_domain = x_extents;
-        const y_domain = [minY, maxY];
+        let y_domain;
+
+        const areaLayout = vizConfig.appearance.areaLayout;
+        if(areaLayout === AreaLayout.STACKED_100) {
+            y_domain = [vizConfig.yAxis.scaleMin ?? 0, vizConfig.yAxis.scaleMax ?? 1];
+        } else if(areaLayout === AreaLayout.STACKED) {
+            const model = diagram.getModel();
+            if(model != null) {
+                let minStackedY = 0, maxStackedY = 0;
+                for(const sg of model.getSegmentGroups() ?? []) {
+                    for(const seg of sg.segments) {
+                        for(const pt of seg.points) {
+                            if(pt.y1 != null && pt.y1 > maxStackedY) maxStackedY = pt.y1;
+                            if(pt.y0 != null && pt.y0 < minStackedY) minStackedY = pt.y0;
+                        }
+                    }
+                }
+                y_domain = [vizConfig.yAxis.scaleMin ?? minStackedY, vizConfig.yAxis.scaleMax ?? maxStackedY];
+            } else {
+                y_domain = [y_extents[0], y_extents[1]];
+            }
+        } else {
+            y_domain = [vizConfig.yAxis.scaleMin ?? y_extents[0], vizConfig.yAxis.scaleMax ?? y_extents[1]];
+        }
 
         // Invert the scale if the configuration is set to do so
         if(vizConfig.xAxis.scaleInvert == true)

@@ -35,6 +35,10 @@ export default class RowToObjectStrategy extends AbstractRowToObjectStrategy {
         object.y = row.continuous(AxisNames.AXIS_Y).value();
         object.y_formatted = row.continuous(AxisNames.AXIS_Y).formattedValue();
 
+		// Set additional properties for stacking
+        object.y0 = 0;
+        object.y1 = object.y;
+
         // Set the marked flag
         object.marked = row.isMarked();
 
