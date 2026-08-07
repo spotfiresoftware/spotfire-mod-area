@@ -448,17 +448,25 @@ export default class DiagramView extends EventHandler {
         const segmentGroupsBase = segmentGroups;
         const segmentGroupsMarked = segmentGroups.filter(segmentGroup => segmentGroup.markedCount > 0);
 
+        function unmarkedSubsegments(segment) {
+            return segment.subsegments.filter(subsegment => subsegment.marked === false);
+        }
+
+        function markedSubsegments(segment) {
+            return segment.subsegments.filter(subsegment => subsegment.marked === true);
+        }
+
         // Redraw data areas for base and marked
         this.#redrawSegmentGroups(svgBaseDataAreaGSelect, segmentGroupsBase,
-            (s, seg, g) => this.#updateSegmentArea(s, seg, g, false));
+            (s, seg, g) => this.#updateSegmentArea(s, seg, unmarkedSubsegments(seg), g));
         this.#redrawSegmentGroups(svgMarkedDataAreaGSelect, segmentGroupsMarked,
-            (s, seg, g) => this.#updateSegmentArea(s, seg, g, true));
+            (s, seg, g) => this.#updateSegmentArea(s, seg, markedSubsegments(seg), g));
 
         // Redraw data lines for base and marked
         this.#redrawSegmentGroups(svgBaseDataLineGSelect, segmentGroupsBase,
-            (s, seg, g) => this.#updateSegment(s, seg, g, true, false));
+            (s, seg, g) => this.#updateBaseSegment(s, seg, unmarkedSubsegments(seg), g));
         this.#redrawSegmentGroups(svgMarkedDataLineGSelect, segmentGroupsMarked,
-            (s, seg, g) => this.#updateSegment(s, seg, g, true, true));
+            (s, seg, g) => this.#updateMarkedSegment(s, seg, markedSubsegments(seg), g));
     }
 
     // Redraw segment groups
@@ -504,61 +512,82 @@ export default class DiagramView extends EventHandler {
     /* ---------------------------------------------------------------------------------------------------- */
     /* REDRAW - SEGMENTS */
 
-    // Update a single segment
-    #updateSegment(segmentSelect, segment, segmentGroup, hasEvents, isMarked) {
+    // Update a single base segment
+    #updateBaseSegment(segmentSelect, segment, subsegments) {
+        const self = this;
+
         if(segmentSelect.node().children.length === 0) {
-            if(hasEvents === true) {
-                segmentSelect.append('g').attr('class', 'event-lines');
-                segmentSelect.append('g').attr('class', 'event-points');
-            }
+            segmentSelect.append('g').attr('class', 'event-lines');
+            segmentSelect.append('g').attr('class', 'event-points');
             segmentSelect.append('g').attr('class', 'data-lines');
-            if(isMarked === true) {
-                segmentSelect.append('g').attr('class', 'data-points');
-            }
         }
 
-        // If events are enabled, update the event lines and points
-        if(hasEvents === true) {
-            const eventLinesSelect = segmentSelect.select('g.event-lines');
-            this.#updateSegmentEventLine(eventLinesSelect, segment);
+        function generatePath(points) {
+            return self.#createPathString(points, self.#getCurve());
+        }
 
-            const eventPointsSelect = segmentSelect.select('g.event-points');
-            this.#updateSegmentEventPoints(eventPointsSelect, segment);
+        // Update event lines and points
+        const eventLinesSelect = segmentSelect.select('g.event-lines');
+        this.#updateSegmentEventPath(eventLinesSelect, segment, generatePath);
+
+        const eventPointsSelect = segmentSelect.select('g.event-points');
+        this.#updateSegmentEventPoints(eventPointsSelect, segment, generatePath);
+
+        // Update the segment data lines
+        const dataLinesSelect = segmentSelect.select('g.data-lines');
+        this.#updateSegmentDataPath(dataLinesSelect, subsegments, generatePath);
+    }
+
+    // Update a single marked segment
+    #updateMarkedSegment(segmentSelect, segment, subsegments) {
+        const self = this;
+
+        if(segmentSelect.node().children.length === 0) {
+            segmentSelect.append('g').attr('class', 'data-lines');
+            segmentSelect.append('g').attr('class', 'data-points');
+        }
+
+        function generatePath(points) {
+            return self.#createPathString(points, self.#getCurve());
         }
 
         // Update the segment data lines
-        const subsegments = segment.subsegments.filter(subsegment => subsegment.marked === isMarked);
         const dataLinesSelect = segmentSelect.select('g.data-lines');
-        this.#updateSegmentDataLines(dataLinesSelect, subsegments);
+        this.#updateSegmentDataPath(dataLinesSelect, subsegments, generatePath);
 
-        // If marking is enabled, update the data points
-        if(isMarked === true) {
-            const dataPointsSelect = segmentSelect.select('g.data-points');
-            this.#updateSegmentDataPoints(dataPointsSelect, subsegments);
-        }
+        // Update the segment data points
+        const dataPointsSelect = segmentSelect.select('g.data-points');
+        this.#updateSegmentDataPoints(dataPointsSelect, subsegments);
     }
 
     // Update a single area segment
-    #updateSegmentArea(segmentSelect, segment, segmentGroup, isMarked) {
+    #updateSegmentArea(segmentSelect, segment, subsegments) {
+        const self = this;
+
         if(segmentSelect.node().children.length === 0) {
             segmentSelect.append('g').attr('class', 'data-areas');
         }
 
-        const subsegments = segment.subsegments.filter(subsegment => subsegment.marked === isMarked);
+        function generatePath(points) {
+            return self.#createClosedPathString(points, self.#getCurve());
+        }
+
         const dataAreasSelect = segmentSelect.select('g.data-areas');
-        this.#updateSegmentDataLines(dataAreasSelect, subsegments, (points) => this.#createClosedPathString(points));
+        this.#updateSegmentDataPath(dataAreasSelect, subsegments, generatePath);
     }
 
     /* ---------------------------------------------------------------------------------------------------- */
     /* REDRAW - SEGMENT COMPONENTS */
 
     // Update segment event line
-    #updateSegmentEventLine(parentElem, segment) {
+    #updateSegmentEventPath(parentElem, segment, pathGeneratorFn) {
         const self = this;
 
         const vizModules = this.#vizModules;
         const vizConfiguration = vizModules.getVizConfiguration();
         const vizConfig = vizConfiguration.getConfiguration();
+
+        if(pathGeneratorFn == null) throw new Error('pathGeneratorFn is required for #updateSegmentDataPath');
 
         // Padding for events line width
         const dataLineEventPadding = 4;
@@ -580,7 +609,7 @@ export default class DiagramView extends EventHandler {
 
         // Function for mouseover events
         function mouseover(e, eventLine) {
-            self.#showHoveredSegment(segment);
+            self.#showHoveredSegment(segment, pathGeneratorFn);
             const tooltip = self.#createSegmentTooltip(segment);
             TooltipService.showUITooltip(tooltip);
         }
@@ -603,7 +632,7 @@ export default class DiagramView extends EventHandler {
         pathEventsSelect.each(function (eventLine, i) {
             const pathSelect = d3.select(this);
             pathSelect
-                .attr('d', self.#createPathString(eventLine.points))
+                .attr('d', pathGeneratorFn(eventLine.points))
                 .attr('stroke-width', dataLineEventStrokeWidth)
                 .on('mouseover', mouseover)
                 .on('mouseout', mouseout)
@@ -617,7 +646,7 @@ export default class DiagramView extends EventHandler {
     }
 
     // Update segment event points
-    #updateSegmentEventPoints(parentElem, segment) {
+    #updateSegmentEventPoints(parentElem, segment, pathGeneratorFn) {
         const self = this;
 
         const scales = this.#scales;
@@ -636,7 +665,7 @@ export default class DiagramView extends EventHandler {
         // Function to handle mouseover, mouseout, and click
         function mouseover(e, point, segment) {
             e.stopPropagation(); // important
-            self.#showHoveredSegment(segment);                
+            self.#showHoveredSegment(segment, pathGeneratorFn);
             TooltipService.showDataTooltip(point.row);
         }
 
@@ -675,8 +704,8 @@ export default class DiagramView extends EventHandler {
             .on('click', click);
     }
 
-    // Update segment data
-    #updateSegmentDataLines(parentElem, subsegments, pathGeneratorFn = null) {
+    // Update segment data path
+    #updateSegmentDataPath(parentElem, subsegments, pathGeneratorFn) {
         const self = this;
 
         const vizModules = this.#vizModules;
@@ -686,6 +715,8 @@ export default class DiagramView extends EventHandler {
         const strokeWidth = vizConfig.appearance.strokeWidth;
         const strokeDashArray = vizConfig.appearance.strokeDashArray;
         const fillOpacity = 1 - vizConfig.appearance.fillTransparency / 100;
+
+        if(pathGeneratorFn == null) throw new Error('pathGeneratorFn is required for #updateSegmentDataPath');
 
         // Bind the segments to the segment group
         const dataSelect = parentElem.selectAll('path.data')
@@ -702,7 +733,7 @@ export default class DiagramView extends EventHandler {
         pathDataSelect.each(function (d, i) {
             const pathSelect = d3.select(this);
             pathSelect
-                .attr('d', pathGeneratorFn ? pathGeneratorFn(d.points) : self.#createPathString(d.points))
+                .attr('d', pathGeneratorFn(d.points))
                 .attr('stroke', d.color)
                 .attr('fill', d.color)
                 .attr('fill-opacity', fillOpacity)
@@ -764,38 +795,39 @@ export default class DiagramView extends EventHandler {
     /* ---------------------------------------------------------------------------------------------------- */
     /* REDRAW - HELPERS */
 
-    // Creates a d defintion for a path from an array of points
-    #createPathString(points) {
-        const scales = this.#scales;
-        const xScale = scales.xScale;
-        const yScale = scales.yScale;
+    // Returns the D3 curve factory; isOpen=true uses CatmullRomOpen for marked sub-segments
+    #getCurve() {
+        const vizModules = this.#vizModules;
+        const vizConfiguration = vizModules.getVizConfiguration();
+        const vizConfig = vizConfiguration.getConfiguration();
 
-        const pathString = points.map((point, index) => {
-            const x = xScale(point.x);
-            const y = yScale(point.y);
-            return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-        }).join(' ');
+        const smoothCurves = vizConfig.appearance.smoothCurves;
+        if(smoothCurves) {
+            // CatmullRomOpen requires 4+ points and truncates short sub-segments
+            return d3.curveCatmullRom.alpha(0.2);
+        }
 
-        return pathString;
+        return d3.curveLinear;
     }
 
-    // Closed path: data points → drop to y baseline → return along baseline → close
-    #createClosedPathString(points) {
-        const scales = this.#scales;
-        const xScale = scales.xScale;
-        const yScale = scales.yScale;
-        const yBaseline = yScale.range()[0]; // pixel coordinate of y-axis minimum
+    // Creates a path string from an array of points, using the specified curve
+    #createPathString(points, curve = d3.curveLinear) {
+        const { xScale, yScale } = this.#scales;
+        return d3.line()
+            .x(p => xScale(p.x))
+            .y(p => yScale(p.y))
+            .curve(curve)(points);
+    }
 
-        const openPath = points.map((point, index) => {
-            const x = xScale(point.x);
-            const y = yScale(point.y);
-            return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-        }).join(' ');
-
-        const xLast  = xScale(points[points.length - 1].x);
-        const xFirst = xScale(points[0].x);
-
-        return `${openPath} L ${xLast} ${yBaseline} L ${xFirst} ${yBaseline} Z`;
+    // Creates a closed path string from an array of points, using the specified curve
+    #createClosedPathString(points, curve = d3.curveLinear) {
+        const { xScale, yScale } = this.#scales;
+        const yBaseline = yScale.range()[0];
+        return d3.area()
+            .x(p => xScale(p.x))
+            .y0(yBaseline)
+            .y1(p => yScale(p.y))
+            .curve(curve)(points);
     }
 
     // Create a tooltip for a line segment
@@ -823,7 +855,7 @@ export default class DiagramView extends EventHandler {
     /* ACTIONS -- HOVER LINE */
 
     // Show hovered elements for a segment group
-    #showHoveredSegment(segment) {
+    #showHoveredSegment(segment, pathGeneratorFn) {
         const svgHoveredLineGSelect = this.#svgHoveredLineGSelect;
 
         const context = this.#context;
@@ -840,7 +872,7 @@ export default class DiagramView extends EventHandler {
         const pathPaddingOffset = DiagramLayout.LINE_PADDING_OFFSET; // Offset for the padding path
 
         // Convert the points into coordinate strings
-        const pathStr = this.#createPathString(segment.points);
+        const pathStr = this.#createPathString(segment.points, this.#getCurve());
 
         // Update the hovered background path
         svgHoveredLineGSelect.select('path.background')
@@ -853,14 +885,15 @@ export default class DiagramView extends EventHandler {
             .attr('stroke', context.styling.general.backgroundColor)
             .attr('stroke-width', strokeWidth + pathPaddingOffset);
 
-        // Update the hovered foreground path
+        // Update the hovered foreground path for base data
         const unmarkedSubsegments = segment.subsegments.filter(subsegment => subsegment.marked === false);
         const foregroundBaseSelect = svgHoveredLineGSelect.select('g.foreground.base');
-        this.#updateSegmentDataLines(foregroundBaseSelect, unmarkedSubsegments);
+        this.#updateSegmentDataPath(foregroundBaseSelect, unmarkedSubsegments, pathGeneratorFn);
 
+        // Update the hovered foreground path and points for marked data
         const markedSubsegments = segment.subsegments.filter(subsegment => subsegment.marked === true);
         const foregroundMarkedSelect = svgHoveredLineGSelect.select('g.foreground.marked');
-        this.#updateSegmentDataLines(foregroundMarkedSelect, markedSubsegments);
+        this.#updateSegmentDataPath(foregroundMarkedSelect, markedSubsegments, pathGeneratorFn);
         this.#updateSegmentDataPoints(foregroundMarkedSelect, markedSubsegments);
 
         // Make hovered elements visible
