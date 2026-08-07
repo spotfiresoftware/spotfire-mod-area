@@ -1,0 +1,3 @@
+[submodule "external/spotfire-mod-common3"]
+	path = external/spotfire-mod-common3
+	url = https://github.com/spotfiresoftware/spotfire-mod-common3
